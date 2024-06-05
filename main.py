@@ -1,5 +1,10 @@
 import pandas as pd
 from datetime import datetime
+import streamlit as st
+import seaborn as sns
+import matplotlib.pyplot as plt
+st.set_option('deprecation.showPyplotGlobalUse', False)
+st.set_page_config(layout="wide")
 
 df = pd.read_excel(r'hubspot-custom-report-devolucoes-2024-06-05.xls')
 
@@ -16,6 +21,7 @@ for i in lista:
     qtd_prevista = int(i[6])
     qtd_feita = int(i[7])
     classe = i[9]
+    
     try:
         data_realizacao = datetime.strptime(i[5], "%Y-%m-%d")
     except:
@@ -63,26 +69,33 @@ for i in dic_lista:
 
 df = pd.DataFrame.from_records(list_df, columns=colunas)
 
+# Filtra DF
+semanas_em_aberto = df['semana_solicitacao'].sort_values(ascending=True).unique().tolist()
+semanas = st.sidebar.select_slider(
+    "Select a color of the rainbow",
+    options=semanas_em_aberto)
+
+filtro = (df['semana_solicitacao'] <= semanas)
+df = df[filtro]
+
+
+# Cria Tabela Dinamica
 tabela_dinamica = df.pivot_table(values='Deal Id', index='semana_solicitacao', columns='semanas_em_aberto', aggfunc='count', fill_value=0) 
 tabela_dinamica.to_csv('dinamica.csv')
 
 # Grafico
-import streamlit as st
-import seaborn as sns
-import matplotlib.pyplot as plt
-st.set_option('deprecation.showPyplotGlobalUse', False)
-st.set_page_config(layout="wide")
 f, ax = plt.subplots(figsize=(20, 5))
-cmap = sns.color_palette("Blues")
+cmap = ['#cccccc', '#dfaaaa','#e67c73', '#d5d06f', '#abc978', '#81c281', '#57bb8a']
 
+tabela_dinamica = tabela_dinamica.sort_index(ascending=True)
 monthly_sessions = sns.heatmap(tabela_dinamica, 
                     annot=True, 
-                    linewidths=3, 
+                    linewidths=0.5, 
                     ax=ax, 
                     cmap=cmap, 
                     square=False)
 
-ax.axes.set_title("Semana de Abertura",fontsize=20)
-ax.set_xlabel("Semana de Abertura",fontsize=15)
-ax.set_ylabel("Semanas em Aberto",fontsize=15)
-st.pyplot(plt.plot())
+ax.set_xlabel("Semana em Aberto",fontsize=15)
+ax.set_ylabel("Semanas de Abertura",fontsize=15)
+st.markdown("## Completude - Devolução")
+st.pyplot(plt.show())
