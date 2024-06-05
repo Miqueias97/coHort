@@ -70,13 +70,16 @@ for i in dic_lista:
 df = pd.DataFrame.from_records(list_df, columns=colunas)
 
 # Filtra DF
-semanas_em_aberto = df['semana_solicitacao'].sort_values(ascending=True).unique().tolist()
-semanas = st.sidebar.select_slider(
-    "Select a color of the rainbow",
-    options=semanas_em_aberto)
+agree = st.sidebar.checkbox("Deseja filtrar por semana?")
 
-filtro = (df['semana_solicitacao'] <= semanas)
-df = df[filtro]
+if agree:    
+    semanas_em_aberto = df['semana_solicitacao'].sort_values(ascending=True).unique().tolist()
+    semanas = st.sidebar.select_slider(
+        "Select a color of the rainbow",
+        options=semanas_em_aberto)
+
+    filtro = (df['semana_solicitacao'] <= semanas)
+    df = df[filtro]
 
 
 # Cria Tabela Dinamica
