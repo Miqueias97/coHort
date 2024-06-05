@@ -65,17 +65,24 @@ df = pd.DataFrame.from_records(list_df, columns=colunas)
 
 tabela_dinamica = df.pivot_table(values='Deal Id', index='semana_solicitacao', columns='semanas_em_aberto', aggfunc='count', fill_value=0) 
 tabela_dinamica.to_csv('dinamica.csv')
+
 # Grafico
+import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
-import streamlit as st
+st.set_option('deprecation.showPyplotGlobalUse', False)
+st.set_page_config(layout="wide")
+f, ax = plt.subplots(figsize=(20, 5))
+cmap = sns.color_palette("Blues")
 
-plt.figure(figsize=(16, 10))
-plt.title('Cohorts Fechamento de tickets Devolução', fontsize = 14)
-valor_Maximo = tabela_dinamica.values.max()
+monthly_sessions = sns.heatmap(tabela_dinamica, 
+                    annot=True, 
+                    linewidths=3, 
+                    ax=ax, 
+                    cmap=cmap, 
+                    square=False)
 
-sns.heatmap(tabela_dinamica, annot = True,vmin = 0.0, vmax =valor_Maximo,cmap="YlGnBu", fmt='g')
-plt.ylabel('Semana de Abertura')
-plt.xlabel('Semanas até o Fechamento')
-fig = plt.figure()
-st.write(fig)
+ax.axes.set_title("Semana de Abertura",fontsize=20)
+ax.set_xlabel("Semana de Abertura",fontsize=15)
+ax.set_ylabel("Semanas em Aberto",fontsize=15)
+st.pyplot(plt.plot())
