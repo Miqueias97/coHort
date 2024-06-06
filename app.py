@@ -49,7 +49,7 @@ if st.session_state["authentication_status"]:
     authenticator.logout()
     st.write(f'Bem Vindo *{st.session_state["name"]}*')
 
-    
+
     class Funcoes_de_manipulacao():
         # constroi novo DataFrame
         def new_Dataframe(lista):
@@ -81,7 +81,7 @@ if st.session_state["authentication_status"]:
 
             colunas = ['Deal Id', 'data_de_solicitacao', 'qtd_prevista', 'qtd_realizada', 'data_conclusão', 'classe', 'semana_solicitacao', 'semana_conclusao', 'semanas_em_aberto']
             list_df = []
-
+            df_table = {}
             for i in dic_lista:
                 if dic_lista[i]['qtd_prevista'] == dic_lista[i]['qtd_realizada']:
                     # Verifica dia da semana de solicitação
@@ -90,13 +90,58 @@ if st.session_state["authentication_status"]:
                     data_conclusao = dic_lista[i]['data_conclusão']
                     semana_conclusao = int(data_conclusao.strftime("%U")) + 1
                     semanas_em_aberto = abs(int(semana_conclusao) - int(semana_solicitacao))
-                    
-
+                
                     list_df.append( [i, dic_lista[i]['data_de_solicitacao'], dic_lista[i]['qtd_prevista'], dic_lista[i]['qtd_realizada'],\
                                     dic_lista[i]['data_conclusão'], dic_lista[i]['classe'], semana_solicitacao, semana_conclusao, semanas_em_aberto ] )
-                    
+                
+                data_de_solicitacao = datetime.strptime(str(dic_lista[i]['data_de_solicitacao']).split('T')[0], '%Y-%m-%d')
+                semana_solicitacao = int(data_de_solicitacao.strftime("%U")) + 1
+                if semana_solicitacao not in df_table:
+                    if dic_lista[i]['qtd_prevista'] == dic_lista[i]['qtd_realizada']:
+                        qtd_conc = 1
+                    else:
+                        0
+                    df_table[semana_solicitacao] = {
+                        'Qtd_de_deals' : 1,
+                        'Qtd Prevista' : dic_lista[i]['qtd_prevista'],
+                        'Qtd_realizada' : dic_lista[i]['qtd_realizada'],                      
+                        'deal_concluidos' : qtd_conc
+                        
+                    }
+                else:
+                    if dic_lista[i]['qtd_prevista'] == dic_lista[i]['qtd_realizada']:
+                        df_table[semana_solicitacao]['deal_concluidos'] += 1
+
+                    df_table[semana_solicitacao]['Qtd Prevista'] += dic_lista[i]['qtd_prevista']
+                    df_table[semana_solicitacao]['Qtd_de_deals'] += 1
+                    df_table[semana_solicitacao]['Qtd_realizada'] += dic_lista[i]['qtd_realizada']
+            list_total = []
+            for i in df_table:
+                a = [i, df_table[i]['Qtd Prevista'], df_table[i]['Qtd_realizada'], df_table[i]['Qtd_de_deals'] , df_table[i]['deal_concluidos']]
+                list_total.append(a)
+
+            colunas_df_table = ['semana_solicitacao', 'Qtd. Prevista', 'Qtd. Concluída', 'Total de Deals Abertos', 'Total de Deals Concluidos']
+            df_table = pd.DataFrame.from_records(list_total, columns=colunas_df_table, index=None)
+            df_table = df_table.sort_values(by='semana_solicitacao', ascending=True)
+            
+            indexDF = []
+            semana = []
+            for i in range(0, len(df_table)):
+                indexDF.append("-")
+                semana.append('Semana ')
+
+            df_table['Semana de Abertura'] = semana
+            df_table.index = indexDF
+            df_table['Semana de Abertura'] = df_table.apply(lambda x: (str(x['Semana de Abertura']), str(x['semana_solicitacao'])) , axis=1)
+            df_table = df_table.drop(columns=['semana_solicitacao'])
+            df_table = df_table[['Semana de Abertura', 'Total de Deals Abertos', 'Total de Deals Concluidos','Qtd. Prevista', 'Qtd. Concluída' ]]
+
             df = pd.DataFrame.from_records(list_df, columns=colunas)
-            return df
+            
+            return {
+                'df' : df,
+                "df_table" : df_table
+            }
 
         # cria estrutura tabelar para coHort    
         def coHort(df):
@@ -107,32 +152,41 @@ if st.session_state["authentication_status"]:
             new_coHort = []
             cont = 0
             for y in range(1, maior_valor):
-                soma_semana = 0
+                soma_semana, soma_disp = 0, 0
                 for x in range(0, eixoX - cont):
                         qtd = df[(df.semana_solicitacao == y) & (df.semanas_em_aberto == x)]
+                        realizado_disp = qtd['qtd_realizada'].sum()
                         qtd = qtd['semana_solicitacao'].count()
                         if qtd > 0:
                             qtd_div = df[(df.semana_solicitacao == y)]
+                            acumulado_disp = qtd_div['qtd_realizada'].sum()
                             qtd_div = qtd_div['semana_solicitacao'].count()
+                            
                             soma_semana = soma_semana + (qtd / qtd_div)
-                        new_coHort.append([y, x, qtd, round(float(soma_semana), 2)])
+                            soma_disp = soma_disp + (realizado_disp / acumulado_disp)
+                        new_coHort.append([y, x, qtd, round(float(soma_semana), 2), realizado_disp, soma_disp])
                 
                 cont +=1
 
-            colunas = ['Semana Deal', 'Semana em relação ao Deal', 'qtd_deal', 'acumulado']
+            colunas = ['Semana Deal', 'Semana em relação ao Deal', 'qtd_deal', 'acumulado', 'qtd_realizada', 'acumulado_disp']
 
             newCohor = pd.DataFrame.from_records(new_coHort, columns=colunas)
 
             data = newCohor.pivot_table(values='qtd_deal', index='Semana Deal', columns='Semana em relação ao Deal')
             acumulado = newCohor.pivot_table(values='acumulado', index='Semana Deal', columns='Semana em relação ao Deal')
+            dispositivos = newCohor.pivot_table(values='qtd_realizada', index='Semana Deal', columns='Semana em relação ao Deal')
+            acumulado_disp = newCohor.pivot_table(values='acumulado_disp', index='Semana Deal', columns='Semana em relação ao Deal')
+            
             return {
                 'corHort_deal' : data,
-                'acumulado' : acumulado
+                'acumulado' : acumulado,
+                'dispositivos' : dispositivos,
+                'acumulado_disp' : acumulado_disp
             }
 
     class Funcoes_de_visualizacao():
-        def ViewStreamlit(new_coHort, label, acumulado):
-            st.html(f"<h1>Completude - Devolução {label}</h1>")
+        def ViewStreamlit(new_coHort, label, acumulado, table, dispositivo, acumulado_disp):
+            st.html(f'<h1 style="color : #666666">Completude - Devolução {label}</h1>')
             # Filtros
             st.sidebar.markdown("##### Propriedades de exibição")
             largura = st.sidebar.select_slider(
@@ -144,9 +198,6 @@ if st.session_state["authentication_status"]:
                 "tamanho do eixo Y em relação ao eixo x",
                 options=range(0, 100),
                 value=(8))
-
-
-
 
             # Graficos
             f, ax = plt.subplots(figsize=(largura, altura))
@@ -160,7 +211,7 @@ if st.session_state["authentication_status"]:
                                 annot_kws={"size": 10, "color" : "black"}, 
                                 linewidths=0.5, 
                                 ax=ax, 
-                                cmap=cmap, #'Spectral', 
+                                cmap=cmap, 
                                 square=False
                                 )
 
@@ -182,7 +233,7 @@ if st.session_state["authentication_status"]:
                                 annot_kws={"size": 10, "color" : "black"}, 
                                 linewidths=0.5, 
                                 ax=ax, 
-                                cmap=cmap, #'Spectral', 
+                                cmap=cmap, 
                                 square=False
                                 )
 
@@ -192,6 +243,43 @@ if st.session_state["authentication_status"]:
             plt.tick_params(axis='both', which='major', labelsize=10, labelbottom = False, bottom=False, top = False, labeltop=True)
             st.pyplot(plt.show())
 
+        # Dispositivos
+            st.html('<hr>')
+            st.html('<h3 style="color : #666666">Fechamento por Qtd. Dispositivo</h3>')
+            f, ax = plt.subplots(figsize=(largura, altura))
+            monthly_sessions = sns.heatmap(dispositivo, 
+                                annot=True,
+                                annot_kws={"size": 10, "color" : "black"}, 
+                                linewidths=0.5, 
+                                ax=ax, 
+                                cmap=cmap, 
+                                square=False
+                                )
+
+            ax.set_xlabel("Semana em relação ao Deal",fontsize=12)
+            ax.set_ylabel("Semanas de Abertura",fontsize=12)
+            
+            plt.tick_params(axis='both', which='major', labelsize=10, labelbottom = False, bottom=False, top = False, labeltop=True)
+            st.pyplot(plt.show())
+
+        # Dispositivos Acumulado
+            st.html('<hr>')
+            st.html('<h3 style="color : #666666">Fechamento por Qtd. Dispositivo Acumulado</h3>')
+            f, ax = plt.subplots(figsize=(largura, altura))
+            monthly_sessions = sns.heatmap(acumulado_disp, 
+                                annot=True,
+                                annot_kws={"size": 10, "color" : "black"}, 
+                                linewidths=0.5, 
+                                ax=ax, 
+                                cmap=cmap, 
+                                square=False
+                                )
+
+            ax.set_xlabel("Semana em relação ao Deal",fontsize=12)
+            ax.set_ylabel("Semanas de Abertura",fontsize=12)
+            
+            plt.tick_params(axis='both', which='major', labelsize=10, labelbottom = False, bottom=False, top = False, labeltop=True)
+            st.pyplot(plt.show())
 
 
         # Leitura do arquivo base
@@ -222,7 +310,8 @@ if st.session_state["authentication_status"]:
     lista = df.values.tolist()
 
 
-    df = Funcoes_de_manipulacao.new_Dataframe(lista)
+    df = Funcoes_de_manipulacao.new_Dataframe(lista)['df']
+    table = Funcoes_de_manipulacao.new_Dataframe(lista)['df_table']
 
     # Atribui Filtro de Classe no streamlit
     classes = ["Todas as Classes"]
@@ -233,7 +322,15 @@ if st.session_state["authentication_status"]:
         df = df[(df['classe'] == filtrar_classe)]
         label = f'( {filtrar_classe} )'
 
+
+
     new_coHort = Funcoes_de_manipulacao.coHort(df)['corHort_deal']
     acumulado = Funcoes_de_manipulacao.coHort(df)['acumulado']
+    dispositivo = Funcoes_de_manipulacao.coHort(df)['dispositivos']
+    acumulado_disp = Funcoes_de_manipulacao.coHort(df)['acumulado_disp']
 
-    Funcoes_de_visualizacao.ViewStreamlit(new_coHort, label, acumulado)
+    Funcoes_de_visualizacao.ViewStreamlit(new_coHort, label, acumulado, table, dispositivo, acumulado_disp)
+
+
+elif st.session_state["authentication_status"] is False:
+    st.error('Usuário/Senha is inválido')
