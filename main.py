@@ -60,9 +60,9 @@ for i in dic_lista:
     if dic_lista[i]['qtd_prevista'] == dic_lista[i]['qtd_realizada']:
         # Verifica dia da semana de solicitação
         data_de_solicitacao = datetime.strptime(str(dic_lista[i]['data_de_solicitacao']).split()[0], '%Y-%m-%d')
-        semana_solicitacao = data_de_solicitacao.strftime("%U")
+        semana_solicitacao = int(data_de_solicitacao.strftime("%U")) + 1
         data_conclusao = dic_lista[i]['data_conclusão']
-        semana_conclusao = data_conclusao.strftime("%U")
+        semana_conclusao = int(data_conclusao.strftime("%U")) + 1
         semanas_em_aberto = abs(int(semana_conclusao) - int(semana_solicitacao))
         
 
@@ -71,7 +71,7 @@ for i in dic_lista:
 
 
 df = pd.DataFrame.from_records(list_df, columns=colunas)
-
+df.to_csv('df.csv')
 # Filtra DF
 
 classes = df['classe'].unique().tolist()
@@ -95,7 +95,7 @@ if filtrar_por_semana:
 
 
 # Cria Tabela Dinamica
-tabela_dinamica = df.pivot_table(values='Deal Id', index='semana_solicitacao', columns='semanas_em_aberto', aggfunc='count', fill_value=0) 
+tabela_dinamica = df.pivot_table(values='Deal Id', index='semana_solicitacao', columns='semanas_em_aberto', aggfunc='count') 
 tabela_dinamica.to_csv('dinamica.csv')
 
 # Grafico
@@ -110,7 +110,8 @@ monthly_sessions = sns.heatmap(tabela_dinamica,
                     cmap=cmap, 
                     square=False)
 
-ax.set_xlabel("Semana em Aberto",fontsize=15)
+ax.set_xlabel("Semana em relação ao Deal",fontsize=15)
 ax.set_ylabel("Semanas de Abertura",fontsize=15)
 st.markdown("## Completude - Devolução")
 st.pyplot(plt.show())
+
