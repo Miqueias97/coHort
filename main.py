@@ -10,7 +10,9 @@ df = pd.read_excel(r'hubspot-custom-report-devolucoes-2024-06-05.xls')
 
 # Filtra Dataframe removendo No value
 filtros = (df['Quantidade Devolução - Calculado - Total'] != '(No value)') & (df['Ticket status'].isin(['Concluido', 'Devolução Cancelada'])) &\
-      (df['CO - Quantidade - Calculado - Total de dispositivos para devolução'] != '(No value)')
+      (df['CO - Quantidade - Calculado - Total de dispositivos para devolução'] != '(No value)') & \
+        (df['Pedido data - Daily'] != '(No value)')
+
 df = df[filtros]
 lista = df.values.tolist()
 
@@ -22,25 +24,26 @@ for i in lista:
     qtd_feita = int(i[7])
     classe = i[9]
     
+
     try:
-        data_realizacao = datetime.strptime(i[5], "%Y-%m-%d")
+        data_realizacao = datetime.strptime(str(i[5]).split()[0], "%Y-%m-%d")
+        if dealId not in dic_lista:
+            dic_lista[dealId] = {
+                'data_de_solicitacao' : data_de_solicitacao,
+                'qtd_prevista' : qtd_prevista,
+                'qtd_realizada' : qtd_feita,
+                'data_conclusão' : data_realizacao,
+                'classe' : classe
+            }
+
+        else:
+            if dic_lista[dealId]['data_conclusão'] < data_realizacao:
+                dic_lista[dealId]['data_conclusão'] = data_realizacao
+            
+            dic_lista[dealId]['qtd_realizada'] += qtd_feita
     except:
         pass
 
-    if dealId not in dic_lista:
-        dic_lista[dealId] = {
-            'data_de_solicitacao' : data_de_solicitacao,
-            'qtd_prevista' : qtd_prevista,
-            'qtd_realizada' : qtd_feita,
-            'data_conclusão' : data_realizacao,
-            'classe' : classe
-        }
-
-    else:
-        if dic_lista[dealId]['data_conclusão'] < data_realizacao:
-            dic_lista[dealId]['data_conclusão'] = data_realizacao
-        
-        dic_lista[dealId]['qtd_realizada'] += qtd_feita
 
 colunas = ['Deal Id', 'data_de_solicitacao', 'qtd_prevista', 'qtd_realizada', 'data_conclusão', 'classe', 'semana_solicitacao', 'semana_conclusao', 'semanas_em_aberto']
 list_df = []
@@ -56,7 +59,7 @@ dia_da_semana = {
 for i in dic_lista:
     if dic_lista[i]['qtd_prevista'] == dic_lista[i]['qtd_realizada']:
         # Verifica dia da semana de solicitação
-        data_de_solicitacao = datetime.strptime(dic_lista[i]['data_de_solicitacao'], '%Y-%m-%d')
+        data_de_solicitacao = datetime.strptime(str(dic_lista[i]['data_de_solicitacao']).split()[0], '%Y-%m-%d')
         semana_solicitacao = data_de_solicitacao.strftime("%U")
         data_conclusao = dic_lista[i]['data_conclusão']
         semana_conclusao = data_conclusao.strftime("%U")
@@ -70,9 +73,18 @@ for i in dic_lista:
 df = pd.DataFrame.from_records(list_df, columns=colunas)
 
 # Filtra DF
-agree = st.sidebar.checkbox("Deseja filtrar por semana?")
 
-if agree:    
+classes = df['classe'].unique().tolist()
+filtro_classe =st.sidebar.selectbox(
+    "Selecione a classe:",
+    classes)
+
+filtros = (df['classe'] == filtro_classe)
+df = df[filtros]
+
+filtrar_por_semana = st.sidebar.checkbox("Deseja filtrar por semana?")
+
+if filtrar_por_semana:    
     semanas_em_aberto = df['semana_solicitacao'].sort_values(ascending=True).unique().tolist()
     semanas = st.sidebar.select_slider(
         "Select a color of the rainbow",
