@@ -64,11 +64,11 @@ class Funcoes_de_manipulacao():
         eixoX = maior_valor
         new_coHort = []
         cont = 0
-        for y in range(0, maior_valor):
+        for y in range(1, maior_valor):
             for x in range(0, eixoX - cont):
-                    qtd = df[(df.semana_solicitacao == y) & (df.semana_conclusao == x)]
+                    qtd = df[(df.semana_solicitacao == y) & (df.semanas_em_aberto == x)]
                     qtd = qtd['semana_solicitacao'].count()
-                    new_coHort.append([x, y, qtd])
+                    new_coHort.append([y, x, qtd])
             
             cont +=1
 
@@ -98,14 +98,15 @@ class Funcoes_de_visualizacao():
 
         # Graficos
         f, ax = plt.subplots(figsize=(largura, altura))
-        cmap = ['#e67c73', '#d5d06f', '#abc978', '#81c281', '#57bb8a']
+        cmap = ['#e67c73', '#f8d567', '#f1d469', '#f1d469', '#e2d26c', '#dad06e', '#d3cf6f', '#cbce71', '#c4cd72', '#bccc74', '#b5ca76',\
+                '#aec977', '#a6c879', '#9fc77a', '#97c67c', '#90c47e', '#88c37f', '#81c281', '#79c182', '#72c084', '#6abe86']
         st.html(f"<h1>Completude - Devolução {label}</h1>")
         monthly_sessions = sns.heatmap(new_coHort, 
                             annot=True,
                             annot_kws={"size": 8, "color" : "black"}, 
                             linewidths=0.5, 
                             ax=ax, 
-                            cmap=cmap, 
+                            cmap=cmap, #'Spectral', 
                             square=False
                             )
 
@@ -122,11 +123,12 @@ class Funcoes_de_visualizacao():
 url = 'https://script.google.com/macros/s/AKfycbwOFDUXCrRtMEQY4GXJ_jwp9x9Lp7NF3n06s9uU0NVF268iQo0jGvENvPBWHvWTalu4/exec'
 
 list_data = []
-for i, data in enumerate(requests.get(url).json()['status']):
-    if i == 0:
-        colunas = data
-    else:
-        list_data.append(data)
+with requests.Session() as session:
+    for i, data in enumerate(requests.get(url).json()['status']):
+        if i == 0:
+            colunas = data
+        else:
+            list_data.append(data)
 
 
 df = pd.DataFrame.from_records(list_data, columns=colunas)
