@@ -25,3 +25,20 @@ Atualmente o relatório é extraido manualmente do Hubspot e importado no <a hre
 
 #### estruturacao_coHorts
 
+Devido a presença de valores nulos a composição do coHort ficava incompleta por este motivo foi criado a função de estruturação de coHort onde é realizada a construção da listagem contendo os valores referentes a cada semana.
+
+#### tabela_resumida
+
+Esta função cria uma tabela para visualização dos dados com a mesma base utilizada para construção dos coHorts.
+
+<hr>
+
+#### Definicao_das_Views
+
+Nesta classe se encontram definidos os métodos para construção das visualizações no streamlit, sendo elas:
+
+- **configuracao_pagina_streamlit**;
+- **autenticacao**;
+- **constroi_coHort**;
+- **propriedades_de_exibicao_coHort**;
+- **filtra_por_classe**.

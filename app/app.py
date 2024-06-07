@@ -6,112 +6,6 @@ import streamlit_authenticator as stauth
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-class Defini_Views():
-    # Defini configurações do streamlit
-    def configura_pagina_streamlit():
-        st.set_page_config(layout="wide")
-        st.set_option('deprecation.showPyplotGlobalUse', False)
-    
-    def obtem_infos_de_login():
-        headers = {
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncXBjY2J0b2FmanlhZ2NhdmJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTI3NTkxNzYsImV4cCI6MjAyODMzNTE3Nn0.8Eztx6ygiqK6jP48BC7TsXwevH0Ji-GbpRdMkOI-_m0'
-        }
-        
-        response = requests.request("GET", 'https://lgqpccbtoafjyagcavbd.supabase.co/rest/v1/users', headers=headers).json()
-
-        config = {
-            'credentials': {
-                'usernames': {
-                }
-            }, 
-            'cookie': {
-                'expiry_days': 1, 
-                'key': 'some_signature_key', 
-                'name': 'some_cookie_name'
-            }
-        }
-
-        for i in response:
-            config['credentials']['usernames'][i['user']] = {
-                'name' : str(i['nome']),
-                'logged_in': False,
-                'password': str(i['pass'])
-            }
-
-        authenticator = stauth.Authenticate(
-            config['credentials'],
-            config['cookie']['name'],
-            config['cookie']['key'],
-            config['cookie']['expiry_days']
-        )
-
-        authenticator.login()
-
-        if st.session_state["authentication_status"]:
-            authenticator.logout()
-            st.write(f'Bem Vindo *{st.session_state["name"]}*')
-            return True
-        
-        elif st.session_state["authentication_status"] is False:
-            st.error('Usuário/Senha is inválido')
-            return False 
-    
-    def constroi_coHort(base, largura : int, altura : int, descricao_base : str, percentil : bool):
-        f, ax = plt.subplots(figsize=(largura, altura))
-        cmap = ['#e67c73', '#f8d567', '#f1d469', '#f1d469', '#e2d26c', '#dad06e', '#d3cf6f', '#cbce71', '#c4cd72', '#bccc74', '#b5ca76',\
-                '#aec977', '#a6c879', '#9fc77a', '#97c67c', '#90c47e', '#88c37f', '#81c281', '#79c182', '#72c084', '#6abe86']
-        
-        st.html('<hr>')
-        st.html(f'<h3 style="color : #666666">{descricao_base}</h3>')
-        monthly_sessions = sns.heatmap(base, 
-                            annot=True,
-                            annot_kws={"size": 10, "color" : "black"}, 
-                            linewidths=0.5, 
-                            ax=ax, 
-                            cmap=cmap, 
-                            square=False,
-                            fmt='.3g'
-                            )
-        if percentil:
-            for t in ax.texts: 
-                texto = t.get_text()
-                if str(texto).find(".") < 1:
-                    texto = texto + '.0'
-                
-                t.set_text( texto + " %")
-
-        ax.set_xlabel("Semana em relação ao Deal",fontsize=12)
-        ax.set_ylabel("Semanas de Abertura",fontsize=12)
-        
-        plt.tick_params(axis='both', which='major', labelsize=10, labelbottom = False, bottom=False, top = False, labeltop=True)
-        st.pyplot(plt.show())
-
-    def propriedades_de_exibicao_coHort():
-        # Filtros    
-        largura = st.sidebar.select_slider(
-            "tamanho do eixo X em relação ao eixo Y",
-            options=range(28, 100),
-            value=(28))
-
-        altura = st.sidebar.select_slider(
-            "tamanho do eixo Y em relação ao eixo x",
-            options=range(0, 100),
-            value=(8))
-    
-        return [altura, largura]
-    
-    def filtra_por_classe(dataframe):
-        classes = ["Todas as Classes"]
-        classes.extend(dataframe['classe_do_pedido'].unique().tolist())
-        filtrar_classe = st.sidebar.selectbox("Filtrar por Classe do Pedido:", classes)
-        if filtrar_classe != "Todas as Classes":
-            df = dataframe[(dataframe['classe_do_pedido'] == filtrar_classe)]
-            st.html(f'<h1 style="color : #666666">Completude - Devolução {filtrar_classe}</h1>')
-            return df
-        else:
-            st.html('<h1 style="color : #666666">Completude - Devolução</h1>')
-            return dataframe
-        
 
 class Estruturacao_dos_dados():
     # constroi df com base nos dados armazenados no sheets e filtra baseado nas classes de interesse
@@ -278,19 +172,125 @@ class Estruturacao_dos_dados():
         
         st.write(df_resumo) 
         #dataframe = dataframe.pivot(values=['deal_id', 'qtd_prevista', 'qtd_devolvida'], index='semana_de_abertura', aggfunc=['count', 'sum', 'sum'])
+
+
+class Definicao_das_Views():
+    # Defini configurações do streamlit
+    def configuracao_pagina_streamlit():
+        st.set_page_config(layout="wide")
+        st.set_option('deprecation.showPyplotGlobalUse', False)
+    
+    def autenticacao():
+        headers = {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncXBjY2J0b2FmanlhZ2NhdmJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTI3NTkxNzYsImV4cCI6MjAyODMzNTE3Nn0.8Eztx6ygiqK6jP48BC7TsXwevH0Ji-GbpRdMkOI-_m0'
+        }
+        
+        response = requests.request("GET", 'https://lgqpccbtoafjyagcavbd.supabase.co/rest/v1/users', headers=headers).json()
+
+        config = {
+            'credentials': {
+                'usernames': {
+                }
+            }, 
+            'cookie': {
+                'expiry_days': 1, 
+                'key': 'some_signature_key', 
+                'name': 'some_cookie_name'
+            }
+        }
+
+        for i in response:
+            config['credentials']['usernames'][i['user']] = {
+                'name' : str(i['nome']),
+                'logged_in': False,
+                'password': str(i['pass'])
+            }
+
+        authenticator = stauth.Authenticate(
+            config['credentials'],
+            config['cookie']['name'],
+            config['cookie']['key'],
+            config['cookie']['expiry_days']
+        )
+
+        authenticator.login()
+
+        if st.session_state["authentication_status"]:
+            authenticator.logout()
+            st.write(f'Bem Vindo *{st.session_state["name"]}*')
+            return True
+        
+        elif st.session_state["authentication_status"] is False:
+            st.error('Usuário/Senha is inválido')
+            return False 
+    
+    def constroi_coHort(base, largura : int, altura : int, descricao_base : str, percentil : bool):
+        f, ax = plt.subplots(figsize=(largura, altura))
+        cmap = ['#e67c73', '#f8d567', '#f1d469', '#f1d469', '#e2d26c', '#dad06e', '#d3cf6f', '#cbce71', '#c4cd72', '#bccc74', '#b5ca76',\
+                '#aec977', '#a6c879', '#9fc77a', '#97c67c', '#90c47e', '#88c37f', '#81c281', '#79c182', '#72c084', '#6abe86']
+        
+        st.html('<hr>')
+        st.html(f'<h3 style="color : #666666">{descricao_base}</h3>')
+        monthly_sessions = sns.heatmap(base, 
+                            annot=True,
+                            annot_kws={"size": 10, "color" : "black"}, 
+                            linewidths=0.5, 
+                            ax=ax, 
+                            cmap=cmap, 
+                            square=False,
+                            fmt='.3g'
+                            )
+        if percentil:
+            for t in ax.texts: 
+                texto = t.get_text()
+                if str(texto).find(".") < 1:
+                    texto = texto + '.0'
+                
+                t.set_text( texto + " %")
+
+        ax.set_xlabel("Semana em relação ao Deal",fontsize=12)
+        ax.set_ylabel("Semanas de Abertura",fontsize=12)
+        
+        plt.tick_params(axis='both', which='major', labelsize=10, labelbottom = False, bottom=False, top = False, labeltop=True)
+        st.pyplot(plt.show())
+
+    def propriedades_de_exibicao_coHort():
+        # Filtros    
+        largura = st.sidebar.select_slider(
+            "tamanho do eixo X em relação ao eixo Y",
+            options=range(28, 100),
+            value=(28))
+
+        altura = st.sidebar.select_slider(
+            "tamanho do eixo Y em relação ao eixo x",
+            options=range(0, 100),
+            value=(8))
+    
+        return [altura, largura]
+    
+    def filtra_por_classe(dataframe):
+        classes = ["Todas as Classes"]
+        classes.extend(dataframe['classe_do_pedido'].unique().tolist())
+        filtrar_classe = st.sidebar.selectbox("Filtrar por Classe do Pedido:", classes)
+        if filtrar_classe != "Todas as Classes":
+            df = dataframe[(dataframe['classe_do_pedido'] == filtrar_classe)]
+            st.html(f'<h1 style="color : #666666">Completude - Devolução {filtrar_classe}</h1>')
+            return df
+        else:
+            st.html('<h1 style="color : #666666">Completude - Devolução</h1>')
+            return dataframe
         
 
-
-class Executa_app(Estruturacao_dos_dados, Defini_Views):
+class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
     def __init__(self) -> None:
-        Defini_Views.configura_pagina_streamlit()
-        if Defini_Views.obtem_infos_de_login():
+        Definicao_das_Views.configuracao_pagina_streamlit()
+        if Definicao_das_Views.autenticacao():
 
             classes = ['Troca', 'Abandono total', 'Abandono parcial', 'Upgrade', 'Lost piloto', 'Piloto parcial']
             status_concluidos = ['Concluido', 'Devolução Cancelada']
 
             df = Estruturacao_dos_dados.obtencao_dos_dados(classes, status_concluidos)
-            df = Defini_Views.filtra_por_classe(df)
+            df = Definicao_das_Views.filtra_por_classe(df)
 
             # Descrição dos coHorts gerados:
             #- coHort_deal : realiza a contagem dos deals por semana
@@ -301,11 +301,11 @@ class Executa_app(Estruturacao_dos_dados, Defini_Views):
             try:
                 Estruturacao_dos_dados.tabela_resumida(df)
                 response = Estruturacao_dos_dados.estruturacao_coHorts(df)
-                propriedades = Defini_Views.propriedades_de_exibicao_coHort()
-                Defini_Views.constroi_coHort(response['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Deal Id', percentil=False)
-                Defini_Views.constroi_coHort(response['coHort_deal_acum'], propriedades[1], propriedades[0], '% de Fechamento por Deal Id', percentil=True)
-                Defini_Views.constroi_coHort(response['coHort_disp'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo', percentil=False)
-                Defini_Views.constroi_coHort(response['coHort_disp_acum'], propriedades[1], propriedades[0], '% de Fechamento por Qtd. de Dispositivos', percentil=True)
+                propriedades = Definicao_das_Views.propriedades_de_exibicao_coHort()
+                Definicao_das_Views.constroi_coHort(response['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Deal Id', percentil=False)
+                Definicao_das_Views.constroi_coHort(response['coHort_deal_acum'], propriedades[1], propriedades[0], '% de Fechamento por Deal Id', percentil=True)
+                Definicao_das_Views.constroi_coHort(response['coHort_disp'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo', percentil=False)
+                Definicao_das_Views.constroi_coHort(response['coHort_disp_acum'], propriedades[1], propriedades[0], '% de Fechamento por Qtd. de Dispositivos', percentil=True)
             except:
                 st.html("<h3>Não há dados!!!</h3>")
         
