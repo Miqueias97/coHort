@@ -235,7 +235,7 @@ class Manipulacao_do_dados():
                     filtro = (dataframe['semana_de_abertura'] == y)
                     df_semana = dataframe[filtro]
                     acumulado_deal_semana = acumulado_deal_semana + (( deals_concluidos / df_semana['deal_id'].count()) * 100 )
-                    acumulado_dispositivos_semana = acumulado_dispositivos_semana + (( dispositivos_concluidos / df_semana['qtd_devolvida'].sum() ) * 100 )
+                    acumulado_dispositivos_semana = acumulado_dispositivos_semana + (( dispositivos_concluidos / df_semana['qtd_prevista'].sum() ) * 100 )
                     
                 dados_coHort.append([ y, x, deals_concluidos, dispositivos_concluidos, round(acumulado_deal_semana, 2), round(acumulado_dispositivos_semana, 2) ])
                     
