@@ -60,7 +60,7 @@ for i in dic_lista:
 
     # verifica Status
     if dic_lista[i]['qtd_prevista'] == dic_lista[i]['qtd_realizada']:
-        status = 'Cocluído'
+        status = 'Concluído'
     else:
         status = 'Pendente'
         
@@ -77,44 +77,32 @@ df = pd.DataFrame.from_records(list_df, columns=colunas)
 maior_valor = (df['semana_solicitacao'].values.max() if df['semana_solicitacao'].values.max() >= df['semana_conclusao'].values.max() \
                else df['semana_conclusao'].values.max()) + 1
 
-estrutura_coHort = {}
+concluidos = df[(df.status == 'Concluído')]
+
+coHort_concluidos = []
 for cont, y in enumerate(range(1, maior_valor)):
 
-    total_de_deals, total_de_dispositivos = 0 , 0
+    percentil_do_total_solicitado_disp = 0
+    percentil_do_total_solicitado_deals = 0
 
     for x in range(0, maior_valor - cont):
-        filtro_df = df[(df.semana_solicitacao == y) & (df.semanas_em_aberto == x)]
-        dic_clase = {}
-        if len(filtro_df) > 0:
-            classes = filtro_df.classe.unique().tolist()
-            
-            for classe in classes:
-                filtro_por_classe = filtro_df[(filtro_df.classe) == classe]  
-                if classe not in dic_clase:
-                    dic_clase[classe] = {
-                        'Semana Deal' : y,
-                        'Semana em relação ao Deal' : x,
-                        'qtd_deal' : filtro_por_classe['Deal Id'].count(),
-                        'acumulado' : filtro_df['Deal Id'].count(),
-                        'qtd_realizada' : filtro_por_classe['qtd_realizada'].sum(),
-                        'acumulado_disp' : filtro_df['qtd_realizada'].sum(),
-                        'qtd_prevista' : filtro_df['qtd_prevista'].sum()
-                    }
-                else:
-                    dic_clase[classe] = 'ok'
-                    
-        else:
-            dic_clase['zero'] = {
-                'Semana Deal' : y,
-                'Semana em relação ao Deal' : x,
-                'qtd_deal' : 0,
-                'acumulado' : '',
-                'qtd_realizada' : 0,
-                'acumulado_disp' : '',
-                'qtd_prevista' : 0
-            }
+        filtro_df =concluidos[(concluidos.semana_solicitacao == y) & (concluidos.semanas_em_aberto == x)]
+        qtd_disp_concluidos = filtro_df['qtd_realizada'].sum()
+        qtd_de_deals = filtro_df['semana_solicitacao'].count()
 
-        estrutura_coHort[str(f'{y} : {x}')] = dic_clase
-        break
-        
-print(df)
+        if qtd_de_deals > 0:
+            df_da_semana = df[(df.semana_solicitacao == y)]
+            percentil_do_total_solicitado_disp = round( ( percentil_do_total_solicitado_disp + (qtd_disp_concluidos / df_da_semana['qtd_prevista'].sum()) * 100 ), 2) 
+            percentil_do_total_solicitado_deals = round( (percentil_do_total_solicitado_deals + (qtd_de_deals / df_da_semana['semana_solicitacao'].count()) * 100 ), 2)
+
+        coHort_concluidos.append([
+            y, x, qtd_de_deals, percentil_do_total_solicitado_deals, qtd_disp_concluidos, percentil_do_total_solicitado_disp
+        ])
+
+colunas = ['Semana Deal', 'Semana em relação ao Deal', 'qtd_deal', 'acumulado', 'qtd_realizada', 'acumulado_disp']
+coHort = pd.DataFrame.from_records(coHort_concluidos, columns=colunas)
+coHort_cont_deals_concluidos = coHort.pivot_table(values='qtd_deal', index='Semana Deal', columns='Semana em relação ao Deal')
+coHort_percent_deals_concluidos = coHort.pivot_table(values='acumulado', index='Semana Deal', columns='Semana em relação ao Deal')
+coHort_sum_disp_concluidos = coHort.pivot_table(values='qtd_realizada', index='Semana Deal', columns='Semana em relação ao Deal')
+coHort_percentual_disp_concluidos = coHort.pivot_table(values='acumulado_disp', index='Semana Deal', columns='Semana em relação ao Deal')
+
