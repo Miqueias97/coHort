@@ -262,11 +262,13 @@ class Manipulacao_do_dados():
             qtd_dispo_concluidos = concluidos['qtd_devolvida'].sum()
             qtd_disp_previsto = data['qtd_prevista'].sum()
             percent_disp = f'{ round((qtd_dispo_concluidos/qtd_disp_previsto) *100, 2) }%'
-            lista_results.append([deals_concluidos, qtd_deals, percet_deal_efetivado, qtd_dispo_concluidos, qtd_disp_previsto, percent_disp])
+            semana_deal = f'Semana {i}'
+            lista_results.append([semana_deal, deals_concluidos, qtd_deals, percet_deal_efetivado, qtd_dispo_concluidos, qtd_disp_previsto, percent_disp])
             
-        cols_df = ['Qtd. Deals Concluídos', 'Qtd. Total de Deals Abertos', '% de Deals Finalizados', 'Qtd. de Dispositivos Concluídos',\
+        cols_df = ['Semana de Abertura do Deal', 'Qtd. Deals Concluídos', 'Qtd. Total de Deals Abertos', '% de Deals Finalizados', 'Qtd. de Dispositivos Concluídos',\
                     'Qtd. de Dispositivos Previsto', '% de Dispositivos Concluídos']
-        df_resumo = pd.DataFrame.from_records(lista_results, columns=cols_df)
+        df_resumo = pd.DataFrame.from_records(lista_results, columns=cols_df, index='Semana de Abertura do Deal')
+        
         st.write(df_resumo) 
         #dataframe = dataframe.pivot(values=['deal_id', 'qtd_prevista', 'qtd_devolvida'], index='semana_de_abertura', aggfunc=['count', 'sum', 'sum'])
         
