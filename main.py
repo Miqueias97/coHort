@@ -84,10 +84,37 @@ for cont, y in enumerate(range(1, maior_valor)):
 
     for x in range(0, maior_valor - cont):
         filtro_df = df[(df.semana_solicitacao == y) & (df.semanas_em_aberto == x)]
-        dataFiltro = df[filtro_df]
-        print(dataFiltro)
-        
+        dic_clase = {}
+        if len(filtro_df) > 0:
+            classes = filtro_df.classe.unique().tolist()
+            
+            for classe in classes:
+                filtro_por_classe = filtro_df[(filtro_df.classe) == classe]  
+                if classe not in dic_clase:
+                    dic_clase[classe] = {
+                        'Semana Deal' : y,
+                        'Semana em relação ao Deal' : x,
+                        'qtd_deal' : filtro_por_classe['Deal Id'].count(),
+                        'acumulado' : filtro_df['Deal Id'].count(),
+                        'qtd_realizada' : filtro_por_classe['qtd_realizada'].sum(),
+                        'acumulado_disp' : '',
+                        'qtd_prevista' : filtro_df['qtd_prevista'].sum()
+                    }
+                else:
+                    dic_clase[classe] = 'ok'
+                    
+        else:
+            dic_clase['zero'] = {
+                'Semana Deal' : y,
+                'Semana em relação ao Deal' : x,
+                'qtd_deal' : 0,
+                'acumulado' : '',
+                'qtd_realizada' : 0,
+                'acumulado_disp' : '',
+                'qtd_prevista' : 0
+            }
 
-        #estrutura_coHort[str(f'{y} : {x}')] = ''
+        estrutura_coHort[str(f'{y} : {x}')] = dic_clase
+        break
         
-#print(estrutura_coHort)
+print(estrutura_coHort)
