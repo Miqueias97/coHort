@@ -56,7 +56,7 @@ class Defini_Views():
             st.error('Usuário/Senha is inválido')
             return False 
     
-    def constroi_coHort(base, largura : int, altura : int, descricao_base : str):
+    def constroi_coHort(base, largura : int, altura : int, descricao_base : str, percentil : bool):
         f, ax = plt.subplots(figsize=(largura, altura))
         cmap = ['#e67c73', '#f8d567', '#f1d469', '#f1d469', '#e2d26c', '#dad06e', '#d3cf6f', '#cbce71', '#c4cd72', '#bccc74', '#b5ca76',\
                 '#aec977', '#a6c879', '#9fc77a', '#97c67c', '#90c47e', '#88c37f', '#81c281', '#79c182', '#72c084', '#6abe86']
@@ -72,6 +72,13 @@ class Defini_Views():
                             square=False,
                             fmt='.3g'
                             )
+        if percentil:
+            for t in ax.texts: 
+                texto = t.get_text()
+                if str(texto).find(".") < 1:
+                    texto = texto + '.0'
+                
+                t.set_text( texto + " %")
 
         ax.set_xlabel("Semana em relação ao Deal",fontsize=12)
         ax.set_ylabel("Semanas de Abertura",fontsize=12)
@@ -237,7 +244,7 @@ class Manipulacao_do_dados():
                     acumulado_deal_semana = acumulado_deal_semana + (( deals_concluidos / df_semana['deal_id'].count()) * 100 )
                     acumulado_dispositivos_semana = acumulado_dispositivos_semana + (( dispositivos_concluidos / df_semana['qtd_prevista'].sum() ) * 100 )
                     
-                dados_coHort.append([ y, x, deals_concluidos, dispositivos_concluidos, round(acumulado_deal_semana, 2), round(acumulado_dispositivos_semana, 2) ])
+                dados_coHort.append([ y, x, deals_concluidos, dispositivos_concluidos, round(acumulado_deal_semana, 1), round(acumulado_dispositivos_semana, 1) ])
                     
 
         cols_df = ['semana_de_abertura', 'semana_em_relacao_ao_deal', 'qtd_deals_concluidos', 'qtd_disp_concluidos', 'per_acum_deal_semana', 'per_acum_disp_semana']
@@ -295,10 +302,10 @@ class Executa_app(Manipulacao_do_dados, Defini_Views):
                 Manipulacao_do_dados.tabela_resumida(df)
                 response = Manipulacao_do_dados.estrutura_coHorts(df)
                 propriedades = Defini_Views.propriedades_de_exibicao_coHort()
-                Defini_Views.constroi_coHort(response['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Deal Id')
-                Defini_Views.constroi_coHort(response['coHort_deal_acum'], propriedades[1], propriedades[0], '% de Fechamento por Deal Id')
-                Defini_Views.constroi_coHort(response['coHort_disp'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo')
-                Defini_Views.constroi_coHort(response['coHort_disp_acum'], propriedades[1], propriedades[0], '% de Fechamento por Qtd. de Dispositivos')
+                Defini_Views.constroi_coHort(response['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Deal Id', percentil=False)
+                Defini_Views.constroi_coHort(response['coHort_deal_acum'], propriedades[1], propriedades[0], '% de Fechamento por Deal Id', percentil=True)
+                Defini_Views.constroi_coHort(response['coHort_disp'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo', percentil=False)
+                Defini_Views.constroi_coHort(response['coHort_disp_acum'], propriedades[1], propriedades[0], '% de Fechamento por Qtd. de Dispositivos', percentil=True)
             except:
                 st.html("<h3>Não há dados!!!</h3>")
         
