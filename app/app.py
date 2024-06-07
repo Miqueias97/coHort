@@ -113,9 +113,9 @@ class Defini_Views():
             return dataframe
         
 
-class Manipulacao_do_dados():
+class Estruturacao_dos_dados():
     # constroi df com base nos dados armazenados no sheets e filtra baseado nas classes de interesse
-    def base_sheets(classes_para_filtro, status_concluidos):
+    def obtencao_dos_dados(classes_para_filtro, status_concluidos):
         # obtem dados e agrupa os Deals
         url = 'https://script.google.com/macros/s/AKfycbwOFDUXCrRtMEQY4GXJ_jwp9x9Lp7NF3n06s9uU0NVF268iQo0jGvENvPBWHvWTalu4/exec'
         deals = {}
@@ -220,7 +220,7 @@ class Manipulacao_do_dados():
 
         return df_deals
     
-    def estrutura_coHorts(dataframe):
+    def estruturacao_coHorts(dataframe):
         tamanho_dos_eixos =dataframe['semana_de_abertura'].max() if dataframe['semana_de_abertura'].max() > dataframe['semana_de_conclusao'].max() else dataframe['semana_de_conclusao'].max()
         
         # constroi eixo Y
@@ -281,7 +281,7 @@ class Manipulacao_do_dados():
         
 
 
-class Executa_app(Manipulacao_do_dados, Defini_Views):
+class Executa_app(Estruturacao_dos_dados, Defini_Views):
     def __init__(self) -> None:
         Defini_Views.configura_pagina_streamlit()
         if Defini_Views.obtem_infos_de_login():
@@ -289,7 +289,7 @@ class Executa_app(Manipulacao_do_dados, Defini_Views):
             classes = ['Troca', 'Abandono total', 'Abandono parcial', 'Upgrade', 'Lost piloto', 'Piloto parcial']
             status_concluidos = ['Concluido', 'Devolução Cancelada']
 
-            df = Manipulacao_do_dados.base_sheets(classes, status_concluidos)
+            df = Estruturacao_dos_dados.obtencao_dos_dados(classes, status_concluidos)
             df = Defini_Views.filtra_por_classe(df)
 
             # Descrição dos coHorts gerados:
@@ -299,8 +299,8 @@ class Executa_app(Manipulacao_do_dados, Defini_Views):
             #- coHort_disp_acum : divide total de dispositivos da semana de conclusão em relação ao dispositivos ao total da semana de conclusão
             
             try:
-                Manipulacao_do_dados.tabela_resumida(df)
-                response = Manipulacao_do_dados.estrutura_coHorts(df)
+                Estruturacao_dos_dados.tabela_resumida(df)
+                response = Estruturacao_dos_dados.estruturacao_coHorts(df)
                 propriedades = Defini_Views.propriedades_de_exibicao_coHort()
                 Defini_Views.constroi_coHort(response['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Deal Id', percentil=False)
                 Defini_Views.constroi_coHort(response['coHort_deal_acum'], propriedades[1], propriedades[0], '% de Fechamento por Deal Id', percentil=True)
