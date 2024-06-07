@@ -97,7 +97,7 @@ for cont, y in enumerate(range(1, maior_valor)):
                         'qtd_deal' : filtro_por_classe['Deal Id'].count(),
                         'acumulado' : filtro_df['Deal Id'].count(),
                         'qtd_realizada' : filtro_por_classe['qtd_realizada'].sum(),
-                        'acumulado_disp' : '',
+                        'acumulado_disp' : filtro_df['qtd_realizada'].sum(),
                         'qtd_prevista' : filtro_df['qtd_prevista'].sum()
                     }
                 else:
@@ -117,4 +117,4 @@ for cont, y in enumerate(range(1, maior_valor)):
         estrutura_coHort[str(f'{y} : {x}')] = dic_clase
         break
         
-print(estrutura_coHort)
+print(df)
