@@ -242,6 +242,7 @@ class Manipulacao_do_dados():
 
         cols_df = ['semana_de_abertura', 'semana_em_relacao_ao_deal', 'qtd_deals_concluidos', 'qtd_disp_concluidos', 'per_acum_deal_semana', 'per_acum_disp_semana']
         dados_coHort = pd.DataFrame(dados_coHort, columns=cols_df)
+        
         return {
         'coHort_deal' : dados_coHort.pivot_table(values='qtd_deals_concluidos', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum'),
         'coHort_deal_acum' : dados_coHort.pivot_table(values='per_acum_deal_semana', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum'),
@@ -249,7 +250,26 @@ class Manipulacao_do_dados():
         'coHort_disp_acum' : dados_coHort.pivot_table(values='per_acum_disp_semana', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum')
         }    
         
-    
+    def tabela_resumida(dataframe):
+        semanas = dataframe['semana_de_abertura'].max()
+        lista_results = []
+        for i in range( 1, int(semanas) + 1):
+            data = dataframe[ (dataframe['semana_de_abertura'] == i)]
+            qtd_deals = data['deal_id'].count()
+            concluidos = data[(data['status_devolucao'] == 'Concluido')]
+            deals_concluidos = concluidos['deal_id'].count()
+            percet_deal_efetivado = f'{round((deals_concluidos / qtd_deals) * 100, 2)}%'
+            qtd_dispo_concluidos = concluidos['qtd_devolvida'].sum()
+            qtd_disp_previsto = data['qtd_prevista'].sum()
+            percent_disp = f'{ round((qtd_dispo_concluidos/qtd_disp_previsto) *100, 2) }%'
+            lista_results.append([deals_concluidos, qtd_deals, percet_deal_efetivado, qtd_dispo_concluidos, qtd_disp_previsto, percent_disp])
+            
+        cols_df = ['Qtd. Deals Concluídos', 'Qtd. Total de Deals Abertos', '% de Deals Finalizados', 'Qtd. de Dispositivos Concluídos',\
+                    'Qtd. de Dispositivos Previsto', '% de Dispositivos Concluídos']
+        df_resumo = pd.DataFrame.from_records(lista_results, columns=cols_df)
+        st.write(df_resumo) 
+        #dataframe = dataframe.pivot(values=['deal_id', 'qtd_prevista', 'qtd_devolvida'], index='semana_de_abertura', aggfunc=['count', 'sum', 'sum'])
+        
 
 
 class Executa_app(Manipulacao_do_dados, Defini_Views):
@@ -270,6 +290,7 @@ class Executa_app(Manipulacao_do_dados, Defini_Views):
             #- coHort_disp_acum : divide total de dispositivos da semana de conclusão em relação ao dispositivos ao total da semana de conclusão
             
             try:
+                Manipulacao_do_dados.tabela_resumida(df)
                 response = Manipulacao_do_dados.estrutura_coHorts(df)
                 propriedades = Defini_Views.propriedades_de_exibicao_coHort()
                 Defini_Views.constroi_coHort(response['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Deal Id')
