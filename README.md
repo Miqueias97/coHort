@@ -42,3 +42,11 @@ Nesta classe se encontram definidos os métodos para construção das visualiza�
 - **constroi_coHort**;
 - **propriedades_de_exibicao_coHort**;
 - **filtra_por_classe**.
+
+#### configuracao_pagina_streamlit
+
+Está função configura a forma de exbição da tela e a permite exibição de gráficos pyPlot.
+
+#### autenticacao
+
+Está função foi desenvolvida afim de restringir o acesso a aplicação atavés da autenticação por login e senha, os usuarios estão salvos em um banco de dados postgres hospedado no Supabase.
