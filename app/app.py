@@ -308,14 +308,5 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
                 Definicao_das_Views.constroi_coHort(response['coHort_disp_acum'], propriedades[1], propriedades[0], '% de Fechamento por Qtd. de Dispositivos', percentil=True)
             except:
                 st.html("<h3>Não há dados!!!</h3>")
-        
-
-            
-            
-            
-
-
-
 
 Executa_app()
-
