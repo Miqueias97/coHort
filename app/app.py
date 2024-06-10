@@ -305,7 +305,6 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
             #- coHort_disp_acum : divide total de dispositivos da semana de conclusão em relação ao dispositivos ao total da semana de conclusão
             
             try:
-                
                 if st.checkbox('Deseja exibir a base de dados'):
                     st.dataframe(df)
                 Estruturacao_dos_dados.tabela_resumida(df)
