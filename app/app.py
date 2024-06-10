@@ -72,9 +72,6 @@ class Estruturacao_dos_dados():
                             'semanas_em_aberto_deal' : semanas_em_aberto_deal
                         }
                         else:
-                            if deals[deal_id]['qtd_prevista'] == deals[deal_id]['qtd_devolvida']:
-                                deals[deal_id]['status_devolucao'] = 'Concluido'
-                                
                             if closed_date != None:
                                 # substitui data anterior caso ela seja None
                                 if deals[deal_id]['closed_date'] == None:
@@ -84,8 +81,9 @@ class Estruturacao_dos_dados():
                                         semana_de_conclusao = int(semana_de_conclusao.strftime("%U")) + 1
                                     except:
                                         semana_de_conclusao = None
+                                    deals[deal_id]['semana_de_conclusao'] = semana_de_conclusao
 
-                                elif deals[deal_id]['closed_date'] < closed_date:
+                                elif deals[deal_id]['closed_date'] <= closed_date:
                                     deals[deal_id]['closed_date'] = closed_date
                                     try:
                                         semana_de_conclusao = datetime.strptime(str(deals[deal_id]['closed_date']).split('T')[0], '%Y-%m-%d')
@@ -93,13 +91,17 @@ class Estruturacao_dos_dados():
                                     except:
                                         semana_de_conclusao = None
 
-                                deals[deal_id]['semana_de_conclusao'] = semana_de_conclusao
+                                    deals[deal_id]['semana_de_conclusao'] = semana_de_conclusao
+
                                 if deals[deal_id]['semana_de_conclusao'] != None and deals[deal_id]['semana_de_abertura'] != None:
-                                    semanas_em_aberto_deal = semana_de_conclusao - semana_de_abertura
+                                    deals[deal_id]['semanas_em_aberto_deal'] = deals[deal_id]['semana_de_conclusao'] - deals[deal_id]['semana_de_abertura']
 
                                 
                                     
                             deals[deal_id]['qtd_devolvida'] += qtd_devolvida
+
+                            if deals[deal_id]['qtd_prevista'] == deals[deal_id]['qtd_devolvida']:
+                                deals[deal_id]['status_devolucao'] = 'Concluido'
 
                             
 
@@ -114,6 +116,7 @@ class Estruturacao_dos_dados():
             
             df_deals = pd.DataFrame.from_records(df_deals, columns=cols_df)
 
+        df_deals.to_csv('test.csv')
         return df_deals
     
     def estruturacao_coHorts(dataframe):
