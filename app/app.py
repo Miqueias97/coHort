@@ -72,6 +72,9 @@ class Estruturacao_dos_dados():
                             'semanas_em_aberto_deal' : semanas_em_aberto_deal
                         }
                         else:
+                            if deals[deal_id]['qtd_prevista'] == deals[deal_id]['qtd_devolvida']:
+                                deals[deal_id]['status_devolucao'] = 'Concluido'
+                                
                             if closed_date != None:
                                 # substitui data anterior caso ela seja None
                                 if deals[deal_id]['closed_date'] == None:
@@ -98,8 +101,7 @@ class Estruturacao_dos_dados():
                                     
                             deals[deal_id]['qtd_devolvida'] += qtd_devolvida
 
-                            if deals[deal_id]['qtd_prevista'] == deals[deal_id]['qtd_devolvida']:
-                                status_devolucao = 'Concluido'
+                            
 
             df_deals = []
             cols_df = ['deal_id', 'data_abertura_do_deal', 'classe_do_pedido', 'closed_date', 'qtd_prevista', 'qtd_devolvida', 'status_devolucao', \
@@ -172,6 +174,7 @@ class Estruturacao_dos_dados():
         
         st.write(df_resumo) 
         #dataframe = dataframe.pivot(values=['deal_id', 'qtd_prevista', 'qtd_devolvida'], index='semana_de_abertura', aggfunc=['count', 'sum', 'sum'])
+
 
 
 class Definicao_das_Views():
