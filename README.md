@@ -49,4 +49,17 @@ Está função configura a forma de exbição da tela e a permite exibição de 
 
 #### autenticacao
 
-Está função foi desenvolvida afim de restringir o acesso a aplicação atavés da autenticação por login e senha, os usuarios estão salvos em um banco de dados postgres hospedado no Supabase.
+Está função se utiliza da biblioteca **streamlit_authenticator**, e é utilizada para validação dos dados de usuário.
+<span style="color: red; font-weight: bold;">Obs:</span>  As informações dos usuários estão armazenadas em um banco de dados **PostgreSQL** hospedado no supabase.
+
+#### constroi_coHort
+
+Esta função é utilizada como construtor do grafico de coHort.
+
+#### propriedades_de_exibicao_coHort
+
+É utilizada para definição das dimensões de exibição dos gráficos.
+
+#### filtra_por_classe
+
+Cria filtros na sidebar da página do streamlit.
