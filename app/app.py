@@ -154,9 +154,7 @@ class Estruturacao_dos_dados():
         
         return {
         'coHort_deal' : dados_coHort.pivot_table(values='qtd_deals_concluidos', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum'),
-        'coHort_deal_acum' : dados_coHort.pivot_table(values='per_acum_deal_semana', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum'),
-        'coHort_disp' : dados_coHort.pivot_table(values='qtd_disp_concluidos', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum'),
-        'coHort_disp_acum' : dados_coHort.pivot_table(values='per_acum_disp_semana', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum')
+        'coHort_deal_acum' : dados_coHort.pivot_table(values='per_acum_deal_semana', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum')
         }    
         
     def tabela_resumida(dataframe):
@@ -323,8 +321,6 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
                 propriedades = Definicao_das_Views.propriedades_de_exibicao_coHort()
                 Definicao_das_Views.constroi_coHort(response['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Deal Id', percentil=False)
                 Definicao_das_Views.constroi_coHort(response['coHort_deal_acum'], propriedades[1], propriedades[0], '% de Fechamento por Deal Id', percentil=True)
-                Definicao_das_Views.constroi_coHort(response['coHort_disp'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo', percentil=False)
-                Definicao_das_Views.constroi_coHort(response['coHort_disp_acum'], propriedades[1], propriedades[0], '% de Fechamento por Qtd. de Dispositivos', percentil=True)
             except:
                 st.html("<h3>Não há dados!!!</h3>")
 
