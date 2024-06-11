@@ -9,12 +9,15 @@ import matplotlib.pyplot as plt
 
 class Estruturacao_dos_dados():
     # constroi df com base nos dados armazenados no sheets e filtra baseado nas classes de interesse
-    def obtencao_dos_dados(classes_para_filtro, status_concluidos):
+    def obtencao_dos_dados(classes_para_filtro, status_concluidos, pipeline):
         # obtem dados e agrupa os Deals
-        url = 'https://script.google.com/macros/s/AKfycbwOFDUXCrRtMEQY4GXJ_jwp9x9Lp7NF3n06s9uU0NVF268iQo0jGvENvPBWHvWTalu4/exec'
+        if pipeline == 'Devolução':
+            url = 'https://script.google.com/macros/s/AKfycbwOFDUXCrRtMEQY4GXJ_jwp9x9Lp7NF3n06s9uU0NVF268iQo0jGvENvPBWHvWTalu4/exec'
+        else:
+            url = 'https://script.google.com/macros/s/AKfycbwX0NDc1S7Ze4tyFla1kt0UkcZ3JhtepXSJ7KTcWBkeU-LxuZS2qn908nK6v76uZtpBSg/exec'
         deals = {}
         with requests.Session() as session:
-            for i, data in enumerate(requests.get(url).json()['status']):
+            for i, data in enumerate(session.get(url).json()['status']):
                 if i > 0: # esta função é necessária pois a api retorna o cabeçalho da pagina 
                     # https://docs.google.com/spreadsheets/d/1Vdh6_eUNrQ59ij13kZoRESZJ0_ncc5su-fgmJchKiZ4/edit#gid=842775073
                     classe_do_pedido = data[9]
@@ -230,6 +233,10 @@ class Definicao_das_Views():
             st.error('Usuário/Senha is inválido')
             return False 
     
+    def definicao_pipeline():
+        pipeline = st.selectbox(label='Selecione a Pipeline', options=['Devolução', 'Instalação'])
+        return pipeline
+
     def constroi_coHort(base, largura : int, altura : int, descricao_base : str, percentil : bool):
         f, ax = plt.subplots(figsize=(largura, altura))
         cmap = ['#e67c73', '#f8d567', '#f1d469', '#f1d469', '#e2d26c', '#dad06e', '#d3cf6f', '#cbce71', '#c4cd72', '#bccc74', '#b5ca76',\
@@ -274,16 +281,16 @@ class Definicao_das_Views():
     
         return [altura, largura]
     
-    def filtra_por_classe(dataframe):
+    def filtra_por_classe(dataframe, pipeline):
         classes = ["Todas as Classes"]
         classes.extend(dataframe['classe_do_pedido'].unique().tolist())
         filtrar_classe = st.sidebar.selectbox("Filtrar por Classe do Pedido:", classes)
         if filtrar_classe != "Todas as Classes":
             df = dataframe[(dataframe['classe_do_pedido'] == filtrar_classe)]
-            st.html(f'<h1 style="color : #666666">Completude - Devolução {filtrar_classe}</h1>')
+            st.html(f'<h1 style="color : #666666">Completude - {pipeline} - {filtrar_classe}</h1>')
             return df
         else:
-            st.html('<h1 style="color : #666666">Completude - Devolução</h1>')
+            st.html(f'<h1 style="color : #666666">Completude - {pipeline}</h1>')
             return dataframe
         
 
@@ -291,20 +298,24 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
     def __init__(self) -> None:
         Definicao_das_Views.configuracao_pagina_streamlit()
         if Definicao_das_Views.autenticacao():
-
-            classes = ['Troca', 'Abandono total', 'Abandono parcial', 'Upgrade', 'Lost piloto', 'Piloto parcial']
-            status_concluidos = ['Concluido', 'Devolução Cancelada']
-
-            df = Estruturacao_dos_dados.obtencao_dos_dados(classes, status_concluidos)
-            df = Definicao_das_Views.filtra_por_classe(df)
-
-            # Descrição dos coHorts gerados:
-            #- coHort_deal : realiza a contagem dos deals por semana
-            #- coHort_deal_acum : divide total de deals da semana de conclusão em relação ao deal ao total da semana de conclusão
-            #- coHort_disp : realiza soma dos dispositivos
-            #- coHort_disp_acum : divide total de dispositivos da semana de conclusão em relação ao dispositivos ao total da semana de conclusão
+            pipeline = Definicao_das_Views.definicao_pipeline()
+            if pipeline == 'Devolução':
+                classes = ['Troca', 'Abandono total', 'Abandono parcial', 'Upgrade', 'Lost piloto', 'Piloto parcial']
+                status_concluidos = ['Concluido', 'Devolução Cancelada']
+            else:
+                classes = ['Primeira compra', 'Upsell', 'Upgrade', 'Piloto', 'Troca', 'Downgrade', 'Troca entre veículos']
+                status_concluidos = ['Instalado', 'Instalação Cancelada']
             
             try:
+                df = Estruturacao_dos_dados.obtencao_dos_dados(classes, status_concluidos, pipeline)
+                df = Definicao_das_Views.filtra_por_classe(df, pipeline)
+
+                # Descrição dos coHorts gerados:
+                #- coHort_deal : realiza a contagem dos deals por semana
+                #- coHort_deal_acum : divide total de deals da semana de conclusão em relação ao deal ao total da semana de conclusão
+                #- coHort_disp : realiza soma dos dispositivos
+                #- coHort_disp_acum : divide total de dispositivos da semana de conclusão em relação ao dispositivos ao total da semana de conclusão
+                
                 if st.checkbox('Deseja exibir a base de dados'):
                     st.dataframe(df)
                 Estruturacao_dos_dados.tabela_resumida(df)
