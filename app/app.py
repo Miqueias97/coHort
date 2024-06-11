@@ -119,7 +119,7 @@ class Estruturacao_dos_dados():
             
             df_deals = pd.DataFrame.from_records(df_deals, columns=cols_df)
 
-        df_deals.to_csv('test.csv')
+        #df_deals.to_csv('test.csv')
         return df_deals
     
     def estruturacao_coHorts(dataframe):
