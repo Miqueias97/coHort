@@ -17,7 +17,8 @@ class Estruturacao_dos_dados():
             url = 'https://script.google.com/macros/s/AKfycbwX0NDc1S7Ze4tyFla1kt0UkcZ3JhtepXSJ7KTcWBkeU-LxuZS2qn908nK6v76uZtpBSg/exec'
         deals = {}
         with requests.Session() as session:
-            for i, data in enumerate(session.get(url).json()['status']):
+            base_de_dados = session.get(url).json()['status']
+            for i, data in enumerate(base_de_dados):
                 if i > 0: # esta função é necessária pois a api retorna o cabeçalho da pagina 
                     # https://docs.google.com/spreadsheets/d/1Vdh6_eUNrQ59ij13kZoRESZJ0_ncc5su-fgmJchKiZ4/edit#gid=842775073
                     classe_do_pedido = data[9]
@@ -120,7 +121,10 @@ class Estruturacao_dos_dados():
             df_deals = pd.DataFrame.from_records(df_deals, columns=cols_df)
 
         #df_deals.to_csv('test.csv')
-        return df_deals
+        return {
+            'df_deals' : df_deals,
+            'base' : base_de_dados
+        }
     
     def estruturacao_coHorts(dataframe):
         tamanho_dos_eixos =dataframe['semana_de_abertura'].max() if dataframe['semana_de_abertura'].max() > dataframe['semana_de_conclusao'].max() else dataframe['semana_de_conclusao'].max()
@@ -178,6 +182,68 @@ class Estruturacao_dos_dados():
         
         st.write(df_resumo) 
         #dataframe = dataframe.pivot(values=['deal_id', 'qtd_prevista', 'qtd_devolvida'], index='semana_de_abertura', aggfunc=['count', 'sum', 'sum'])
+
+    def estrutura_base_dispositivos(dataframe, classes_para_filtro, status_concluidos):
+        deals = {}
+        for cont, i in enumerate(dataframe):
+            if cont > 0:
+                data_abertura_do_deal = i[8]
+                classe_do_pedido = i[9]
+                closed_date = i[5]
+                try:
+                    qtd_prevista = int(i[6])
+                except:
+                    qtd_prevista = None
+                try:
+                    qtd_devolvida = int(i[7])
+                except:
+                    qtd_devolvida = None
+                status_devolucao = i[3]
+
+                try:
+                    semana_de_abertura = datetime.strptime(str(data_abertura_do_deal).split('T')[0], '%Y-%m-%d')
+                    semana_de_abertura = int(semana_de_abertura.strftime("%U")) + 1
+                except:
+                    semana_de_abertura = None
+
+                try:
+                    semana_de_conclusao = datetime.strptime(str(closed_date).split('T')[0], '%Y-%m-%d')
+                    semana_de_conclusao = int(semana_de_conclusao.strftime("%U")) + 1
+                    semanas_em_aberto_deal = semana_de_conclusao - semana_de_abertura
+                except:
+                    semana_de_conclusao = None
+                
+                if (qtd_devolvida != None or qtd_prevista != None) and classe_do_pedido in classes_para_filtro:
+                    if status_devolucao in status_concluidos:
+                        status = 'Concluido'
+                    else:
+                        status = 'Pendente'
+                    
+
+                    deals[cont] = {
+                        'data_abertura_do_deal' : data_abertura_do_deal,
+                        'classe_do_pedido' : classe_do_pedido,
+                        'closed_date' : closed_date,
+                        'qtd_prevista' : qtd_prevista,
+                        'qtd_devolvida' : qtd_devolvida,
+                        'status_devolucao' : status_devolucao,
+                        'semana_de_abertura' : semana_de_abertura,
+                        'semana_de_conclusao' : semana_de_conclusao,
+                        'semanas_em_aberto_deal' : semanas_em_aberto_deal,
+                        'status' : status
+                    }
+        
+        df_deals = []
+        cols_df = ['deal_id', 'data_abertura_do_deal', 'classe_do_pedido', 'closed_date', 'qtd_prevista', 'qtd_devolvida', 'status_devolucao', \
+                    'semana_de_abertura', 'semana_de_conclusao', 'semanas_em_aberto_deal']
+        for i in deals:
+            df_deals.append([ \
+                i, deals[i]['data_abertura_do_deal'], deals[i]['classe_do_pedido'], deals[i]['closed_date'], deals[i]['qtd_prevista'],\
+                deals[i]['qtd_devolvida'], deals[i]['status_devolucao'] ,deals[i]['semana_de_abertura'], deals[i]['semana_de_conclusao'], deals[i]['semanas_em_aberto_deal']\
+                ])
+        
+        df_deals = pd.DataFrame.from_records(df_deals, columns=cols_df)
+        st.dataframe(df_deals)
 
 
 
@@ -306,7 +372,9 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
             
             try:
                 df = Estruturacao_dos_dados.obtencao_dos_dados(classes, status_concluidos, pipeline)
-                df = Definicao_das_Views.filtra_por_classe(df, pipeline)
+                Estruturacao_dos_dados.estrutura_base_dispositivos(df['base'], classes, status_concluidos)
+                df = Definicao_das_Views.filtra_por_classe(df['df_deals'], pipeline)
+                
 
                 # Descrição dos coHorts gerados:
                 #- coHort_deal : realiza a contagem dos deals por semana
