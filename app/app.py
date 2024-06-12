@@ -243,7 +243,7 @@ class Estruturacao_dos_dados():
                 ])
         
         df_deals = pd.DataFrame.from_records(df_deals, columns=cols_df)
-        st.dataframe(df_deals)
+        return df_deals
 
 
 
@@ -372,7 +372,7 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
             
             try:
                 df = Estruturacao_dos_dados.obtencao_dos_dados(classes, status_concluidos, pipeline)
-                Estruturacao_dos_dados.estrutura_base_dispositivos(df['base'], classes, status_concluidos)
+                df_disp = Estruturacao_dos_dados.estrutura_base_dispositivos(df['base'], classes, status_concluidos)
                 df = Definicao_das_Views.filtra_por_classe(df['df_deals'], pipeline)
                 
 
@@ -386,9 +386,13 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
                     st.dataframe(df)
                 Estruturacao_dos_dados.tabela_resumida(df)
                 response = Estruturacao_dos_dados.estruturacao_coHorts(df)
+                responseDisp = Estruturacao_dos_dados.estruturacao_coHorts(df_disp)
                 propriedades = Definicao_das_Views.propriedades_de_exibicao_coHort()
                 Definicao_das_Views.constroi_coHort(response['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Deal Id', percentil=False)
                 Definicao_das_Views.constroi_coHort(response['coHort_deal_acum'], propriedades[1], propriedades[0], '% de Fechamento por Deal Id', percentil=True)
+
+                Definicao_das_Views.constroi_coHort(responseDisp['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo', percentil=False)
+                Definicao_das_Views.constroi_coHort(responseDisp['coHort_deal_acum'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo', percentil=True)
             except:
                 st.html("<h3>Não há dados!!!</h3>")
 
