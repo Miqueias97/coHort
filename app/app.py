@@ -1,4 +1,4 @@
-import requests, json
+import requests, json, asyncio
 import pandas as pd
 from datetime import datetime
 import streamlit as st
@@ -268,8 +268,8 @@ class Estruturacao_dos_dados():
                     dispositivos_concluidos = df_semana['qtd_devolvida'].sum()
                     filtro = (dataframe['semana_de_abertura'] == y)
                     df_semana = dataframe[filtro]
-                    acumulado_deal_semana = 0
-                    acumulado_dispositivos_semana = 0
+                    acumulado_deal_semana = acumulado_deal_semana + (( deals_concluidos / df_semana['deal_id'].count()) * 100 )
+                    acumulado_dispositivos_semana = acumulado_dispositivos_semana + (( dispositivos_concluidos / df_semana['qtd_prevista'].sum() ) * 100 )
                     
                 dados_coHort.append([ y, x, deals_concluidos, dispositivos_concluidos, round(acumulado_deal_semana, 1), round(acumulado_dispositivos_semana, 1) ])
                     
@@ -279,8 +279,68 @@ class Estruturacao_dos_dados():
         
         return {
         'coHort_deal' : dados_coHort.pivot_table(values='qtd_disp_concluidos', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum'),
-        'coHort_deal_acum' : dados_coHort.pivot_table(values='per_acum_deal_semana', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum')
+        'coHort_deal_acum' : dados_coHort.pivot_table(values='per_acum_disp_semana', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum')
         }
+
+    async def perguntas(dataFrameDeal, pergunta, filtrar_classe):
+        cols = []
+        linhas = []
+        for cont, i in enumerate(dataFrameDeal):
+            if cont == 0:
+                for item in i:
+                    cols.append(str(item))
+            else:
+                data_abertura_do_deal = i[8]
+                closed_date = i[5]
+                try:
+                    try:
+                        semana_de_abertura = datetime.strptime(str(data_abertura_do_deal).split('T')[0], '%Y-%m-%d')
+                    except:
+                        semana_de_abertura = datetime.strptime(str(data_abertura_do_deal), '%Y-%m-%d')
+                    semana_de_abertura = f'Aberto na Semana {int(semana_de_abertura.strftime("%U")) + 1}'
+                except:
+                    semana_de_abertura = None
+                
+                try:
+                    semana_de_conclusao = datetime.strptime(str(closed_date).split('T')[0], '%Y-%m-%d')
+                    semana_de_conclusao = f'Aberto na Semana {int(semana_de_conclusao.strftime("%U")) + 1}'
+                except:
+                    semana_de_conclusao = None
+                item = i
+                item.extend([semana_de_abertura, semana_de_conclusao])
+                linhas.append(item)
+        
+        cols.extend(['semana de abertura', 'semana de conclusao'])
+        df = pd.DataFrame.from_records(linhas, columns=cols)
+        
+        if filtrar_classe != "Todas as Classes":
+            df = df[(df['supply__devolucao__tipo'] == filtrar_classe)]
+
+        csv = df.to_html()
+       
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyCsVCgLULGsI1M_faQdQhLdMyGOVhJPoiw"
+        payload = json.dumps({
+        "contents": [
+            {
+            "parts": [
+                {
+                "text": f'Com base na tabela do html {csv} {pergunta}?'
+                }
+            ]
+            }
+        ]
+        })
+        headers = {
+        'Content-Type': 'application/json'
+        }
+        with requests.Session() as session:
+            response = session.post( url, headers=headers, data=payload).json()
+            try:
+                response = response['candidates'][0]['content']['parts'][0]['text']
+            except:
+                response = "Não foi possível atender a solicitação, tente novamente."
+        st.write(response)
+
 
 class Definicao_das_Views():
     # Defini configurações do streamlit
@@ -419,14 +479,27 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
             
             try:
                 df = Estruturacao_dos_dados.obtencao_dos_dados(classes, status_concluidos, pipeline)
+                base = df['base']
                 df_disp = Estruturacao_dos_dados.estrutura_base_dispositivos(df['base'], classes, status_concluidos)
                 df = Definicao_das_Views.filtra_por_classe(df['df_deals'], pipeline)
+                filtro = df['filtro']
                 df_disp = Definicao_das_Views.filtra_por_classe_disp(df_disp, df['filtro'])
-                df = df['df']
                 
-                
+                with st.form("my_form"):
+                    st.write("Pergunte ao Gemini (em teste)")
+                    txt = st.text_area(
+                    "", "Qual Company Id possui mais tickets?"
+                    )
+                    submitted = st.form_submit_button("Enviar")
+                    if submitted:
+
+                        async def main():
+                            task1 = asyncio.create_task( Estruturacao_dos_dados.perguntas(base, txt, filtro))
+                            await task1
+                        asyncio.run(main())
                 
 
+                df = df['df']
                 # Descrição dos coHorts gerados:
                 #- coHort_deal : realiza a contagem dos deals por semana
                 #- coHort_deal_acum : divide total de deals da semana de conclusão em relação ao deal ao total da semana de conclusão
