@@ -429,7 +429,9 @@ class Definicao_das_Views():
         if percentil:
             for t in ax.texts: 
                 texto = t.get_text()
-                if str(texto).find(".") < 1:
+                if texto == '100':
+                    texto = '100'
+                elif str(texto).find(".") < 1:
                     texto = texto + '.0'
                 
                 t.set_text( texto + " %")
