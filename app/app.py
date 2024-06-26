@@ -517,7 +517,7 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
                 Definicao_das_Views.constroi_coHort(response['coHort_deal_acum'], propriedades[1], propriedades[0], '% de Fechamento por Deal Id', percentil=True)
 
                 Definicao_das_Views.constroi_coHort(responseDisp['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo', percentil=False)
-                Definicao_das_Views.constroi_coHort(responseDisp['coHort_deal_acum'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo', percentil=True)
+                Definicao_das_Views.constroi_coHort(responseDisp['coHort_deal_acum'], propriedades[1], propriedades[0], '% de Fechamento por Dispositivo', percentil=True)
                 if True:#st.checkbox('Deseja exibir a base de dados'):
                     st.dataframe(df)
             except:
