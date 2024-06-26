@@ -180,7 +180,7 @@ class Estruturacao_dos_dados():
                     'Qtd. de Dispositivos Previsto', '% de Dispositivos Concluídos']
         df_resumo = pd.DataFrame.from_records(lista_results, columns=cols_df, index='Semana de Abertura do Deal')
         
-        st.write(df_resumo) 
+        #st.write(df_resumo) 
         #dataframe = dataframe.pivot(values=['deal_id', 'qtd_prevista', 'qtd_devolvida'], index='semana_de_abertura', aggfunc=['count', 'sum', 'sum'])
 
     def estrutura_base_dispositivos(dataframe, classes_para_filtro, status_concluidos):
@@ -231,7 +231,8 @@ class Estruturacao_dos_dados():
                             'semana_de_abertura' : semana_de_abertura,
                             'semana_de_conclusao' : semana_de_conclusao,
                             'semanas_em_aberto_deal' : semanas_em_aberto_deal,
-                            'status' : status
+                            'status' : status,
+                            'deal_id' : str(i[1])
                         }
         
         df_deals = []
@@ -239,7 +240,7 @@ class Estruturacao_dos_dados():
                     'semana_de_abertura', 'semana_de_conclusao', 'semanas_em_aberto_deal']
         for i in deals:
             df_deals.append([ \
-                i, deals[i]['data_abertura_do_deal'], deals[i]['classe_do_pedido'], deals[i]['closed_date'], deals[i]['qtd_prevista'],\
+                deals[i]['deal_id'], deals[i]['data_abertura_do_deal'], deals[i]['classe_do_pedido'], deals[i]['closed_date'], deals[i]['qtd_prevista'],\
                 deals[i]['qtd_devolvida'], deals[i]['status_devolucao'] ,deals[i]['semana_de_abertura'], deals[i]['semana_de_conclusao'], deals[i]['semanas_em_aberto_deal']\
                 ])
         
@@ -259,7 +260,20 @@ class Estruturacao_dos_dados():
             # Controi eixo X usando o contador que subtrai 1 a cada linha adicionada ao eixo Y
             for x in range( 0, (int(tamanho_dos_eixos) + 1 ) - cont ): 
                 filtro = (dataframe['semana_de_abertura'] == y) & ( dataframe['semanas_em_aberto_deal'] == x ) & (dataframe['status_devolucao'] == 'Concluido')
+                filtro2 =(dataframe['semana_de_abertura'] == y)
                 df_semana = dataframe[filtro]
+                df_semana2 = dataframe[filtro2]
+                sumDisp = 0
+                listaDeals = []
+                for i in df_semana2['deal_id'].unique():
+                    if str(i) in listaDeals:
+                        pass
+                    else:
+                        listaDeals.append(str(i))
+                        deal = df_semana2[(df_semana2['deal_id'] == i)]
+                        deal = deal['qtd_prevista'].mean()
+                        sumDisp += deal
+
                 if len(df_semana) == 0:
                     deals_concluidos, dispositivos_concluidos = 0, 0
 
@@ -269,7 +283,7 @@ class Estruturacao_dos_dados():
                     filtro = (dataframe['semana_de_abertura'] == y)
                     df_semana = dataframe[filtro]
                     acumulado_deal_semana = acumulado_deal_semana + (( deals_concluidos / df_semana['deal_id'].count()) * 100 )
-                    acumulado_dispositivos_semana = acumulado_dispositivos_semana + (( dispositivos_concluidos / df_semana['qtd_prevista'].sum() ) * 100 )
+                    acumulado_dispositivos_semana += ((dispositivos_concluidos / sumDisp) * 100 )
                     
                 dados_coHort.append([ y, x, deals_concluidos, dispositivos_concluidos, round(acumulado_deal_semana, 1), round(acumulado_dispositivos_semana, 1) ])
                     
@@ -279,7 +293,7 @@ class Estruturacao_dos_dados():
         
         return {
         'coHort_deal' : dados_coHort.pivot_table(values='qtd_disp_concluidos', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum'),
-        'coHort_deal_acum' : dados_coHort.pivot_table(values='per_acum_disp_semana', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='sum')
+        'coHort_deal_acum' : dados_coHort.pivot_table(values='per_acum_disp_semana', index='semana_de_abertura', columns='semana_em_relacao_ao_deal', aggfunc='mean')
         }
 
     async def perguntas(dataFrameDeal, pergunta, filtrar_classe):
@@ -484,19 +498,7 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
                 df = Definicao_das_Views.filtra_por_classe(df['df_deals'], pipeline)
                 filtro = df['filtro']
                 df_disp = Definicao_das_Views.filtra_por_classe_disp(df_disp, df['filtro'])
-                
-                with st.form("my_form"):
-                    st.write("Pergunte ao Gemini (em teste)")
-                    txt = st.text_area(
-                    "", "Qual Company Id possui mais tickets?"
-                    )
-                    submitted = st.form_submit_button("Enviar")
-                    if submitted:
 
-                        async def main():
-                            task1 = asyncio.create_task( Estruturacao_dos_dados.perguntas(base, txt, filtro))
-                            await task1
-                        asyncio.run(main())
                 
 
                 df = df['df']
@@ -506,8 +508,7 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
                 #- coHort_disp : realiza soma dos dispositivos
                 #- coHort_disp_acum : divide total de dispositivos da semana de conclusão em relação ao dispositivos ao total da semana de conclusão
                 
-                if st.checkbox('Deseja exibir a base de dados'):
-                    st.dataframe(df)
+                
                 Estruturacao_dos_dados.tabela_resumida(df)
                 response = Estruturacao_dos_dados.estruturacao_coHorts(df)
                 responseDisp = Estruturacao_dos_dados.estruturacao_coHortsDisp(df_disp)
@@ -517,6 +518,8 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
 
                 Definicao_das_Views.constroi_coHort(responseDisp['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo', percentil=False)
                 Definicao_das_Views.constroi_coHort(responseDisp['coHort_deal_acum'], propriedades[1], propriedades[0], 'Fechamento por Dispositivo', percentil=True)
+                if True:#st.checkbox('Deseja exibir a base de dados'):
+                    st.dataframe(df)
             except:
                 st.html("<h3>Não há dados!!!</h3>")
 
