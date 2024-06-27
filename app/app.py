@@ -256,35 +256,48 @@ class Estruturacao_dos_dados():
         for cont, y in enumerate( range( 1, int(tamanho_dos_eixos) + 1 ) ):
             # inicializa variaveis pré-definidas das semanas
             acumulado_deal_semana, acumulado_dispositivos_semana = 0, 0
-
+            filtro2 = (dataframe['semana_de_abertura'] == y)
+            df_semana2 = dataframe[filtro2]
+            sumDisp = 0
+            listaDeals = []
+            for i in df_semana2['deal_id'].unique():
+                if str(i) in listaDeals:
+                    pass
+                else:
+                    deal = df_semana2[(df_semana2['deal_id'] == str(i))]
+                    data = deal['qtd_prevista'].unique()
+                    
+                    try:
+                        for valor in data.tolist():
+                            try:
+                                valor = int(valor)
+                                sumDisp += valor
+                            except:
+                                pass 
+                    except:
+                        pass
+                    listaDeals.append(str(i))
+                    
             # Controi eixo X usando o contador que subtrai 1 a cada linha adicionada ao eixo Y
             for x in range( 0, (int(tamanho_dos_eixos) + 1 ) - cont ): 
                 filtro = (dataframe['semana_de_abertura'] == y) & ( dataframe['semanas_em_aberto_deal'] == x ) & (dataframe['status_devolucao'] == 'Concluido')
-                filtro2 =(dataframe['semana_de_abertura'] == y)
                 df_semana = dataframe[filtro]
-                df_semana2 = dataframe[filtro2]
-                sumDisp = 0
-                listaDeals = []
-                for i in df_semana2['deal_id'].unique():
-                    if str(i) in listaDeals:
-                        pass
-                    else:
-                        listaDeals.append(str(i))
-                        deal = df_semana2[(df_semana2['deal_id'] == i)]
-                        deal = deal['qtd_prevista'].mean()
-                        sumDisp += deal
-
+                
                 if len(df_semana) == 0:
                     deals_concluidos, dispositivos_concluidos = 0, 0
 
                 else:
+                    
                     deals_concluidos = 0
                     dispositivos_concluidos = df_semana['qtd_devolvida'].sum()
                     filtro = (dataframe['semana_de_abertura'] == y)
                     df_semana = dataframe[filtro]
                     acumulado_deal_semana = acumulado_deal_semana + (( deals_concluidos / df_semana['deal_id'].count()) * 100 )
-                    acumulado_dispositivos_semana += ((dispositivos_concluidos / sumDisp) * 100 )
-                    
+                    try:
+                        acumulado_dispositivos_semana += ((dispositivos_concluidos / sumDisp) * 100 )
+                    except:
+                        acumulado_dispositivos_semana = acumulado_dispositivos_semana
+
                 dados_coHort.append([ y, x, deals_concluidos, dispositivos_concluidos, round(acumulado_deal_semana, 1), round(acumulado_dispositivos_semana, 1) ])
                     
 
@@ -429,11 +442,11 @@ class Definicao_das_Views():
         if percentil:
             for t in ax.texts: 
                 texto = t.get_text()
-                if texto == '100':
-                    texto = '100'
-                elif str(texto).find(".") < 1:
-                    texto = texto + '.0'
-                
+                try:
+                    if str(texto).find(".") < 1:
+                        texto = texto + '.0'
+                except:
+                    pass
                 t.set_text( texto + " %")
 
         ax.set_xlabel("Semana em relação ao Deal",fontsize=12)
@@ -515,6 +528,7 @@ class Executa_app(Estruturacao_dos_dados, Definicao_das_Views):
                 response = Estruturacao_dos_dados.estruturacao_coHorts(df)
                 responseDisp = Estruturacao_dos_dados.estruturacao_coHortsDisp(df_disp)
                 propriedades = Definicao_das_Views.propriedades_de_exibicao_coHort()
+                
                 Definicao_das_Views.constroi_coHort(response['coHort_deal'], propriedades[1], propriedades[0], 'Fechamento por Deal Id', percentil=False)
                 Definicao_das_Views.constroi_coHort(response['coHort_deal_acum'], propriedades[1], propriedades[0], '% de Fechamento por Deal Id', percentil=True)
 
