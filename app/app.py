@@ -376,48 +376,7 @@ class Definicao_das_Views():
         st.set_option('deprecation.showPyplotGlobalUse', False)
     
     def autenticacao():
-        headers = {
-        'apikey': st.secrets["db_username"]
-        }
-        
-        response = requests.request("GET", 'https://lgqpccbtoafjyagcavbd.supabase.co/rest/v1/users', headers=headers).json()
-
-        config = {
-            'credentials': {
-                'usernames': {
-                }
-            }, 
-            'cookie': {
-                'expiry_days': 1, 
-                'key': 'some_signature_key', 
-                'name': 'some_cookie_name'
-            }
-        }
-
-        for i in response:
-            config['credentials']['usernames'][i['user']] = {
-                'name' : str(i['nome']),
-                'logged_in': False,
-                'password': str(i['pass'])
-            }
-
-        authenticator = stauth.Authenticate(
-            config['credentials'],
-            config['cookie']['name'],
-            config['cookie']['key'],
-            config['cookie']['expiry_days']
-        )
-
-        authenticator.login()
-
-        if st.session_state["authentication_status"]:
-            authenticator.logout()
-            st.write(f'Bem Vindo *{st.session_state["name"]}*')
-            return True
-        
-        elif st.session_state["authentication_status"] is False:
-            st.error('Usuário/Senha is inválido')
-            return False 
+        return True
     
     def definicao_pipeline():
         pipeline = st.selectbox(label='Selecione a Pipeline', options=['Devolução', 'Instalação'])
